@@ -6,9 +6,9 @@ Este código lista arquivos e copia para qualquer diretório.
 from platform import python_version
 print('Versão da linguagem Pytrhon Usada Neste Spyder', python_version())
 
-#********************************************************************
-# Importando um Dataset com Pandas
-#********************************************************************
+********************************************************************
+Importando um Dataset com Pandas
+********************************************************************
 
 import pandas as pd
 
