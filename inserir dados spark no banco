@@ -1,0 +1,54 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, avg, when
+
+# Criando a SparkSession
+spark = SparkSession.builder \
+    .appName("ProcessamentoCSV") \
+    .config("spark.driver.extraClassPath", "/path/to/mysql-connector-java.jar") \
+    .getOrCreate()
+
+# 🔹 1. Lendo um arquivo CSV
+df = spark.read \
+    .option("header", True) \
+    .option("inferSchema", True) \
+    .csv("dados.csv")
+
+print("📌 DataFrame Original:")
+df.show()
+
+# 🔹 2. Limpeza de Dados
+df = df.dropna()  # Removendo linhas com valores nulos
+df = df.withColumn("idade", col("idade").cast("int"))  # Convertendo idade para inteiro
+
+# 🔹 3. Filtragem: Apenas pessoas com idade > 18
+df_filtrado = df.filter(col("idade") > 18)
+
+# 🔹 4. Criando uma nova coluna baseada em condições
+df_transformado = df_filtrado.withColumn(
+    "categoria",
+    when(col("idade") < 30, "Jovem")
+    .when(col("idade") < 50, "Adulto")
+    .otherwise("Idoso")
+)
+
+# 🔹 5. Agregação: Média de idade por categoria
+df_agrupado = df_transformado.groupBy("categoria").agg(avg("idade").alias("media_idade"))
+
+print("📌 DataFrame Transformado:")
+df_agrupado.show()
+
+# 🔹 6. Salvando no banco de dados MySQL
+df_agrupado.write \
+    .format("jdbc") \
+    .option("url", "jdbc:mysql://localhost:3306/meu_banco") \
+    .option("driver", "com.mysql.cj.jdbc.Driver") \
+    .option("dbtable", "tabela_final") \
+    .option("user", "usuario") \
+    .option("password", "senha") \
+    .mode("overwrite") \
+    .save()
+
+print("✅ Dados salvos no banco de dados!")
+
+# Encerrando a SparkSession
+spark.stop()
